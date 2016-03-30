@@ -14,6 +14,7 @@ class GameScene2: SKScene, SKPhysicsContactDelegate  {
     var groundNode = SKSpriteNode()
     var scrollNode = SKNode()
     var groundSpeed = 5
+    var boxNode = SKSpriteNode()
     
     var playerBaseline = CGFloat(0)
     var onGround = true
@@ -24,18 +25,54 @@ class GameScene2: SKScene, SKPhysicsContactDelegate  {
     let boxCategory: UInt32 = 0x1 << 2
     let groundCategory: UInt32 = 0x1 << 3
     
+    var longPressing = false
+    var boxMaxX = CGFloat(0)
+    var originalBoxPositionX = CGFloat(0)
+    
+    
     
     override func didMoveToView(view: SKView) {
         
         setupPhysics()
         setupGround()
         setupPlayer()
+        setupBoxes()
         
-        let longPressRecognizer = UILongPressGestureRecognizer(target: self, action: #selector(handleLongPress))
+        let longPressRecognizer = UILongPressGestureRecognizer(target: self, action: Selector("handleLongPress:"))
         view.addGestureRecognizer(longPressRecognizer)
     }
     
     override func update(currentTime: NSTimeInterval) {
+        boxRunner()
+    }
+    
+    func boxRunner() {
+        
+        for (box,boxStatus) in self.boxStatuses {
+            
+            let thisBox = self.childNodeWithName(box)
+            if boxStatus.shouldRunBlock() {
+                boxStatus.timeGapforNextRun = random()
+                boxStatus.currentInterval = 0
+                boxStatus.isRunning = true
+            }
+            if boxStatus.isRunning{
+                
+                if thisBox?.position.x > boxMaxX {
+                    thisBox?.position.x -= CGFloat(groundSpeed)
+                }
+                else{
+                    thisBox?.position.x = self.originalBoxPositionX
+                    boxStatus.isRunning = false
+                }
+                
+            }
+            else {
+                boxStatus.currentInterval++
+            }
+            
+        }
+        
     }
     
     func setupPhysics() {
@@ -56,17 +93,24 @@ class GameScene2: SKScene, SKPhysicsContactDelegate  {
     }
     
     func handleLongPress(sender: UILongPressGestureRecognizer) {
-        if(sender.state == .Changed){
-            if onGround == true {
-                playerPositionY = player.position.y
-                player.physicsBody?.velocity = CGVectorMake(0, 0)
-                player.physicsBody?.applyImpulse(CGVectorMake(0, 40))
-                onGround = false
-            }
+        if(sender.state == .Began){
+            jump()
+            longPressing = true
+        }
+        else if sender.state == .Ended {
+            longPressing = false
         }
         
     }
     
+    func jump() {
+        if onGround == true {
+            playerPositionY = player.position.y
+            player.physicsBody?.velocity = CGVectorMake(0, 0)
+            player.physicsBody?.applyImpulse(CGVectorMake(0, 40))
+            onGround = false
+        }
+    }
     
     func didBeginContact(contact: SKPhysicsContact) {
         var firstBody = SKPhysicsBody()
@@ -81,6 +125,9 @@ class GameScene2: SKScene, SKPhysicsContactDelegate  {
         }
         if firstBody.categoryBitMask & groundCategory == 0 {
             onGround = true
+            if longPressing {
+                jump()
+            }
         }
     }
     
@@ -126,12 +173,43 @@ class GameScene2: SKScene, SKPhysicsContactDelegate  {
         
         self.groundNode.position = CGPointMake(0, 0)
         self.groundNode.physicsBody = SKPhysicsBody(rectangleOfSize: CGSizeMake(self.frame.size.width, groundTextureHeight * 2))
-        self.groundNode.physicsBody!.dynamic = false
-        self.groundNode.physicsBody!.categoryBitMask = groundCategory
+        self.groundNode.physicsBody?.dynamic = false
+        self.groundNode.physicsBody?.categoryBitMask = groundCategory
         
         
         self.addChild(groundNode)
         self.addChild(scrollNode)
+        
+    }
+    
+    func random() -> UInt32 {
+        
+        let range = UInt32(50)...UInt32(200)
+        return range.startIndex + arc4random_uniform(range.endIndex - range.startIndex + 1)
+        
+    }
+    
+    var boxStatuses:Dictionary<String,BoxStatus> = [:]
+    
+    func setupBoxes() {
+        
+        let boxTexture = SKTexture(imageNamed: "box")
+        boxNode.position = CGPointMake(CGRectGetMaxX(self.frame) + boxTexture.size().width, playerBaseline)
+        boxNode.texture = boxTexture
+        
+        self.boxNode.physicsBody = SKPhysicsBody(rectangleOfSize: boxNode.size)
+        self.boxNode.physicsBody?.dynamic = false
+        self.boxNode.physicsBody?.categoryBitMask = boxCategory
+        self.boxNode.physicsBody?.collisionBitMask = playerCategory
+        self.boxNode.physicsBody?.contactTestBitMask = playerCategory
+        
+        self.boxNode.name = "box"
+        
+        boxStatuses["box"] = BoxStatus(isRunning: false, timeGapForNextRun: random(), currentInterval: UInt32(0))
+        boxMaxX = 0 - boxNode.size.width / 2
+        originalBoxPositionX = boxNode.position.x
+        
+        self.addChild(boxNode)
         
     }
     

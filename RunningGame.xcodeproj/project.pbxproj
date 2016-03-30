@@ -17,6 +17,7 @@
 		11D318B11C9B4DF80057DC78 /* RunningGameTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11D318B01C9B4DF80057DC78 /* RunningGameTests.swift */; };
 		11D318BE1C9BA5CF0057DC78 /* Utilities.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11D318BD1C9BA5CF0057DC78 /* Utilities.swift */; };
 		11EEFD141CA6453F00B871EA /* GameScene2.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11EEFD131CA6453F00B871EA /* GameScene2.swift */; };
+		F071F4FA1CAC7E7400759667 /* BoxStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = F071F4F91CAC7E7400759667 /* BoxStatus.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -44,6 +45,7 @@
 		11D318B21C9B4DF80057DC78 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		11D318BD1C9BA5CF0057DC78 /* Utilities.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Utilities.swift; sourceTree = "<group>"; };
 		11EEFD131CA6453F00B871EA /* GameScene2.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GameScene2.swift; sourceTree = "<group>"; };
+		F071F4F91CAC7E7400759667 /* BoxStatus.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = BoxStatus.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -88,6 +90,7 @@
 				11D318971C9B4DF80057DC78 /* AppDelegate.swift */,
 				11D3189B1C9B4DF80057DC78 /* GameScene.swift */,
 				11EEFD131CA6453F00B871EA /* GameScene2.swift */,
+				F071F4F91CAC7E7400759667 /* BoxStatus.swift */,
 				11BC435F1CAA21A5005B9F97 /* StartScene.swift */,
 				11D318BD1C9BA5CF0057DC78 /* Utilities.swift */,
 				11D3189D1C9B4DF80057DC78 /* GameViewController.swift */,
@@ -217,6 +220,7 @@
 				11D318BE1C9BA5CF0057DC78 /* Utilities.swift in Sources */,
 				11EEFD141CA6453F00B871EA /* GameScene2.swift in Sources */,
 				11D318981C9B4DF80057DC78 /* AppDelegate.swift in Sources */,
+				F071F4FA1CAC7E7400759667 /* BoxStatus.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
