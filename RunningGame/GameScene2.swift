@@ -14,7 +14,7 @@ class GameScene2: SKScene, SKPhysicsContactDelegate  {
     var groundNode = SKSpriteNode()
     var scrollNode = SKNode()
     var groundSpeed = 5
-    var boxNode = SKSpriteNode()
+    var boxNode = SKNode()
     
     var playerBaseline = CGFloat(0)
     var onGround = true
@@ -28,7 +28,9 @@ class GameScene2: SKScene, SKPhysicsContactDelegate  {
     var longPressing = false
     var boxMaxX = CGFloat(0)
     var originalBoxPositionX = CGFloat(0)
-    
+    var moveBoxesAndRemove = SKAction()
+    var boxTexture = SKTexture()
+    var groundHeight = CGFloat()
     
     
     override func didMoveToView(view: SKView) {
@@ -36,42 +38,13 @@ class GameScene2: SKScene, SKPhysicsContactDelegate  {
         setupPhysics()
         setupGround()
         setupPlayer()
-        setupBoxes()
+        spawnBoxes()
         
-        let longPressRecognizer = UILongPressGestureRecognizer(target: self, action: Selector("handleLongPress:"))
+        let longPressRecognizer = UILongPressGestureRecognizer(target: self, action: #selector(GameScene2.handleLongPress(_:)))
         view.addGestureRecognizer(longPressRecognizer)
     }
     
     override func update(currentTime: NSTimeInterval) {
-        boxRunner()
-    }
-    
-    func boxRunner() {
-        
-        for (box,boxStatus) in self.boxStatuses {
-            
-            let thisBox = self.childNodeWithName(box)
-            if boxStatus.shouldRunBlock() {
-                boxStatus.timeGapforNextRun = random()
-                boxStatus.currentInterval = 0
-                boxStatus.isRunning = true
-            }
-            if boxStatus.isRunning{
-                
-                if thisBox?.position.x > boxMaxX {
-                    thisBox?.position.x -= CGFloat(groundSpeed)
-                }
-                else{
-                    thisBox?.position.x = self.originalBoxPositionX
-                    boxStatus.isRunning = false
-                }
-                
-            }
-            else {
-                boxStatus.currentInterval++
-            }
-            
-        }
         
     }
     
@@ -129,6 +102,16 @@ class GameScene2: SKScene, SKPhysicsContactDelegate  {
                 jump()
             }
         }
+        if secondBody.categoryBitMask == boxCategory {
+            if ((firstBody.node?.position.y)! - playerBaseline) <= secondBody.node?.position.y {
+                let scene = StartScene(size: self.size)
+                let skView = view! as SKView
+                skView.ignoresSiblingOrder = true
+                scene.scaleMode = .ResizeFill
+                scene.size = skView.bounds.size
+                skView.presentScene(scene)
+            }
+        }
     }
     
     func setupPlayer() {
@@ -147,6 +130,7 @@ class GameScene2: SKScene, SKPhysicsContactDelegate  {
         player.physicsBody?.categoryBitMask = playerCategory
         player.physicsBody?.collisionBitMask = spikeCategory | boxCategory | groundCategory
         player.physicsBody?.contactTestBitMask = spikeCategory | boxCategory | groundCategory
+        player.name = "player"
         
         self.addChild(player)
     }
@@ -158,6 +142,7 @@ class GameScene2: SKScene, SKPhysicsContactDelegate  {
         let groundTextureSize = groundTexture.size()
         let groundTextureWidth = groundTextureSize.width
         let groundTextureHeight = groundTextureSize.height
+        groundHeight = groundTextureHeight / 2
         
         let moveGroundSprite = SKAction.moveByX(-groundTextureWidth * 2.0, y: 0, duration: NSTimeInterval(0.02 * groundTextureWidth * 2.0))
         let resetGroundSprite = SKAction.moveByX(groundTextureWidth * 2.0, y: 0, duration: 0)
@@ -175,7 +160,7 @@ class GameScene2: SKScene, SKPhysicsContactDelegate  {
         self.groundNode.physicsBody = SKPhysicsBody(rectangleOfSize: CGSizeMake(self.frame.size.width, groundTextureHeight * 2))
         self.groundNode.physicsBody?.dynamic = false
         self.groundNode.physicsBody?.categoryBitMask = groundCategory
-        
+        groundNode.name = "ground"
         
         self.addChild(groundNode)
         self.addChild(scrollNode)
@@ -184,32 +169,40 @@ class GameScene2: SKScene, SKPhysicsContactDelegate  {
     
     func random() -> UInt32 {
         
-        let range = UInt32(50)...UInt32(200)
+        let range = UInt32(0.1)...UInt32(10)
         return range.startIndex + arc4random_uniform(range.endIndex - range.startIndex + 1)
         
     }
     
-    var boxStatuses:Dictionary<String,BoxStatus> = [:]
+    func spawnBoxes() {
+        boxTexture = SKTexture(imageNamed: "box")
+        boxTexture.filteringMode = .Nearest
+        
+        let spawn = SKAction.performSelector(#selector(setupBoxes), onTarget: self)
+        let delay = SKAction.waitForDuration(Double(random()))
+        let spawnThenDelay = SKAction.sequence([spawn,delay])
+        let spawnThenDelayForever = SKAction.repeatActionForever(spawnThenDelay)
+        
+        let distanceToMove = self.frame.size.width + 2 * boxTexture.size().width
+        let moveBoxes = SKAction.moveByX(-distanceToMove, y: 0, duration: 0.01 * Double(distanceToMove))
+        let removeBoxes = SKAction.removeFromParent()
+        moveBoxesAndRemove = SKAction.sequence([moveBoxes,removeBoxes])
+        
+        self.runAction(spawnThenDelayForever)
+        self.addChild(boxNode)
+    }
     
     func setupBoxes() {
+        let boxNode = SKSpriteNode(texture: boxTexture)
+        boxNode.setScale(1.5)
+        boxNode.position = CGPointMake( self.frame.size.width + self.boxTexture.size().width * 2.0, self.frame.size.height * 0.4 - groundHeight + playerBaseline/4)
+        boxNode.physicsBody = SKPhysicsBody(rectangleOfSize: boxNode.size)
+        boxNode.physicsBody?.dynamic = false
+        boxNode.physicsBody?.categoryBitMask = boxCategory
         
-        let boxTexture = SKTexture(imageNamed: "box")
-        boxNode.position = CGPointMake(CGRectGetMaxX(self.frame) + boxTexture.size().width, playerBaseline)
-        boxNode.texture = boxTexture
-        
-        self.boxNode.physicsBody = SKPhysicsBody(rectangleOfSize: boxNode.size)
-        self.boxNode.physicsBody?.dynamic = false
-        self.boxNode.physicsBody?.categoryBitMask = boxCategory
-        self.boxNode.physicsBody?.collisionBitMask = playerCategory
-        self.boxNode.physicsBody?.contactTestBitMask = playerCategory
-        
-        self.boxNode.name = "box"
-        
-        boxStatuses["box"] = BoxStatus(isRunning: false, timeGapForNextRun: random(), currentInterval: UInt32(0))
-        boxMaxX = 0 - boxNode.size.width / 2
-        originalBoxPositionX = boxNode.position.x
-        
-        self.addChild(boxNode)
+        boxNode.runAction(moveBoxesAndRemove)
+        boxNode.name = "box"
+        self.boxNode.addChild(boxNode)
         
     }
     
