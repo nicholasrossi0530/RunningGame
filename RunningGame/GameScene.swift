@@ -1,201 +1,226 @@
 //
-//  GameScene.swift
+//  GameScene2.swift
 //  RunningGame
 //
-//  Created by Rossi on 3/17/16.
-//  Copyright (c) 2016 Rossi. All rights reserved.
+//  Created by Rossi on 3/25/16.
+//  Copyright © 2016 Rossi. All rights reserved.
 //
 
 import SpriteKit
 
-class GameScene: SKScene, SKPhysicsContactDelegate {
-    
-    let sceneColor = SKColor(red: 128, green: 0, blue: 128, alpha: 1)
-    let playerCat: UInt32 = 1<<0
-    let boxCat: UInt32 = 1<<1
-    let levelCat: UInt32 = 1<<2
-    let message = "Click to start!"
-    
-    
-    var player:SKSpriteNode!
-    var scrollNode = SKNode()
-    var groundNode = SKNode()
-    var boxTexture = SKTexture(imageNamed: "box")
-    var boxesNode = SKNode()
-    var startLabel = SKLabelNode(fontNamed: "Chalkduster")
-    var score = 0
-    var isGameOver = false
-    var isStarted = false
-    
-    var moveBoxesAndRemove: SKAction!
-    var makeSkyRed: SKAction!
-    var makeSkyBlue: SKAction!
-    var makeGameEnd: SKAction!
-    
+//let stream: NSInputStream = {
+//    let bundle = NSBundle.mainBundle()
+//    let path = bundle.pathForResource("Levels", ofType: "plist")
+//    let a = NSInputStream(fileAtPath: path!)
+//    a!.open()
+//    return a!
+//}()
 
+class GameScene: SKScene, SKPhysicsContactDelegate  {
+    
+    var player: SKSpriteNode!
+    var groundNode = SKSpriteNode()
+    var scrollNode = SKNode()
+    var groundSpeed = 5
+    var boxNode = SKNode()
+    
+    var playerBaseline = CGFloat(0)
+    var onGround = true
+    var playerPositionY = CGFloat()
+    
+    let playerCategory: UInt32 = 0x1 << 0
+    let spikeCategory: UInt32 = 0x1 << 1
+    let boxCategory: UInt32 = 0x1 << 2
+    let groundCategory: UInt32 = 0x1 << 3
+    
+    var longPressing = false
+    var boxMaxX = CGFloat(0)
+    var originalBoxPositionX = CGFloat(0)
+    var moveBoxesAndRemove = SKAction()
+    var boxTexture = SKTexture()
+    var groundHeight = CGFloat()
+//    let levels = try! NSPropertyListSerialization.propertyListWithStream(stream, options: .Immutable, format: nil)
+    var levelArray: NSArray?
+    var levelSpot = 0
     
     override func didMoveToView(view: SKView) {
         
-        view.paused = true
+        setupPhysics()
+        setupGround()
+        setupPlayer()
+        spawnBoxes()
         
-        self.backgroundColor = sceneColor
+        let longPressRecognizer = UILongPressGestureRecognizer(target: self, action: #selector(GameScene.handleLongPress(_:)))
+        view.addGestureRecognizer(longPressRecognizer)
+        let path = NSBundle.mainBundle().pathForResource("Levels", ofType: "plist")
+        levelArray = NSArray(contentsOfFile: path!)
+    }
+    
+    override func update(currentTime: NSTimeInterval) {
+    }
+    
+    func setupPhysics() {
         
-        self.physicsWorld.gravity = CGVectorMake(0, -7)
-        self.physicsWorld.contactDelegate = self
-        self.boxTexture.filteringMode = .Nearest
+        physicsWorld.contactDelegate = self
+        physicsWorld.gravity = CGVectorMake(0, -5)
         
-        self.setUpStartLabel()
-        self.player = setupPlayer()
-        self.setupGround()
-        self.setupBoxes()
-        
-        self.makeGameEnd = SKAction.runBlock({self.isGameOver = true})
-        
-        self.makeSkyBlue = SKAction.runBlock({self.backgroundColor = self.sceneColor})
-        
-        self.makeSkyRed = SKAction.runBlock({self.backgroundColor = UIColor.redColor()})
-
     }
     
     override func touchesBegan(touches: Set<UITouch>, withEvent event: UIEvent?) {
-        
-        if  !self.isStarted && self.scene!.view!.paused {
-            self.isStarted = true
-            self.scene!.view!.paused = false
-            
-            self.startLabel.removeFromParent()
+        if onGround == true {
+            playerPositionY = player.position.y
+            player.physicsBody?.velocity = CGVectorMake(0, 0)
+            player.physicsBody?.applyImpulse(CGVectorMake(0, 40))
+            onGround = false
+        }
+    }
+    
+    func handleLongPress(sender: UILongPressGestureRecognizer) {
+        if(sender.state == .Began){
+            jump()
+            longPressing = true
+        }
+        else if sender.state == .Ended {
+            longPressing = false
         }
         
-        if self.scrollNode.speed > 0 {
-            for _: AnyObject in touches {
-                let contactCheck = self.player.physicsBody!.allContactedBodies()
-                if contactCheck.count != 0 {
-                    self.player.physicsBody!.velocity = CGVectorMake(0,0)
-                    self.player.physicsBody!.applyImpulse(CGVectorMake(0, 50))
-                }
+    }
+    
+    func jump() {
+        if onGround == true {
+            playerPositionY = player.position.y
+            player.physicsBody?.velocity = CGVectorMake(0, 0)
+            player.physicsBody?.applyImpulse(CGVectorMake(0, 40))
+            onGround = false
+        }
+    }
+    
+    func didBeginContact(contact: SKPhysicsContact) {
+        var firstBody = SKPhysicsBody()
+        var secondBody = SKPhysicsBody()
+        if contact.bodyA.categoryBitMask < contact.bodyB.categoryBitMask {
+            firstBody = contact.bodyA
+            secondBody = contact.bodyB
+        }
+        else {
+            firstBody = contact.bodyB
+            secondBody = contact.bodyA
+        }
+        if firstBody.categoryBitMask & groundCategory == 0 {
+            onGround = true
+            if longPressing {
+                jump()
+            }
+        }
+        if secondBody.categoryBitMask == boxCategory {
+            if ((firstBody.node?.position.y)! - playerBaseline) <= secondBody.node?.position.y {
+                let scene = StartScene(size: self.size)
+                let skView = view! as SKView
+                skView.ignoresSiblingOrder = true
+                scene.scaleMode = .ResizeFill
+                scene.size = skView.bounds.size
+                skView.presentScene(scene)
             }
         }
     }
     
-    override func update(currentTime: CFTimeInterval) {
-        if let myPlayer = self.player {
-            self.player.zRotation = Utilities.clamp(-1, max: 0.5, value: myPlayer.physicsBody!.velocity.dy * (myPlayer.physicsBody?.velocity.dy < 0 ? 0.003 : 0.001))
-        }
-        if self.isGameOver {
-            restart()
-        }
-    }
-    
-    func setUpStartLabel() {
-        startLabel = SKLabelNode(text: self.message)
-        startLabel.fontSize = 30
-        startLabel.fontColor = UIColor.blackColor()
-        startLabel.position = CGPointMake(CGRectGetMidX(self.frame), CGRectGetMidY(self.frame) + (CGRectGetMidY(self.frame) / 3))
+    func setupPlayer() {
         
-        self.addChild(startLabel)
-    }
-    
-    func restart() {
-        let s = GameScene(size: self.size)
-        s.scaleMode = .AspectFill
-        self.view?.presentScene(s)
-    }
-    
-    func didBeginContact(contact: SKPhysicsContact) {
-        print(contact.bodyA)
-        print("next")
-        print(contact.bodyB)
-        self.scrollNode.speed = 0
-                
-        self.runAction(SKAction.sequence([self.makeSkyRed,SKAction.waitForDuration(NSTimeInterval(0.05)),self.makeSkyBlue,self.makeGameEnd]),withKey: "gameover")
-    }
-    
-    
-    func spawnBoxes() {
-        let boxDown = SKSpriteNode(texture: self.boxTexture)
-        let border = SKSpriteNode(imageNamed: "boxborder")
-        boxDown.setScale(1.75)
-        border.setScale(1.75)
-        boxDown.position = CGPointMake(self.frame.size.width + self.boxTexture.size().width * 2.0, self.frame.size.height * 0.4)
-        border.size = boxDown.size
-        border.position = CGPointMake(boxDown.position.x, boxDown.position.y + boxDown.size.height)
-        boxDown.physicsBody = SKPhysicsBody(rectangleOfSize: boxDown.size)
-        border.physicsBody = SKPhysicsBody(rectangleOfSize: border.size)
-        boxDown.physicsBody?.dynamic = false
-        border.physicsBody?.dynamic = false
-        border.physicsBody?.categoryBitMask = levelCat
+        let playerTexture = SKTexture(imageNamed: "isaac")
+        playerTexture.filteringMode = .Nearest
         
-        boxDown.runAction(moveBoxesAndRemove)
-        self.boxesNode.addChild(border)
-        self.boxesNode.addChild(boxDown)
+        player = SKSpriteNode(texture: playerTexture)
+        player.setScale(0.75)
+        playerBaseline = (groundNode.size.height / 2) + (player.size.height / 2)
+        //player.position = CGPointMake(self.frame.size.width * 0.35, self.frame.size.height * 0.5)
+        player.position = CGPointMake(CGRectGetMinX(self.frame) + (player.size.width) + (player.size.width / 4), self.playerBaseline)
+        player.physicsBody = SKPhysicsBody(rectangleOfSize: player.size)
+        player.physicsBody!.dynamic = true
+        player.physicsBody!.allowsRotation = false
+        player.physicsBody?.categoryBitMask = playerCategory
+        player.physicsBody?.collisionBitMask = spikeCategory | boxCategory | groundCategory
+        player.physicsBody?.contactTestBitMask = spikeCategory | boxCategory | groundCategory
+        player.name = "player"
         
-    }
-    
-    func setupBoxes() {
-        SKAction.runBlock({})
-        let spawn = SKAction.runBlock({self.spawnBoxes()})
-        let delay = SKAction.waitForDuration(NSTimeInterval(2.0))
-        let spawnThenDelay = SKAction.sequence([spawn,delay])
-        let spawnThenDelayForever = SKAction.repeatActionForever(spawnThenDelay)
-        
-        let distanceToMove = CGFloat(self.frame.size.width + 2.0 * self.boxTexture.size().width)
-        let moveBoxes = SKAction.moveByX(-distanceToMove, y: 0.0, duration: NSTimeInterval(0.01 * distanceToMove))
-        let removeBoxes = SKAction.removeFromParent()
-        moveBoxesAndRemove = SKAction.sequence([moveBoxes, removeBoxes])
-        
-        self.runAction(spawnThenDelayForever)
-        self.addChild(self.boxesNode)
+        self.addChild(player)
     }
     
     func setupGround() {
+        
         let groundTexture = SKTexture(imageNamed: "ground")
         
         let groundTextureSize = groundTexture.size()
         let groundTextureWidth = groundTextureSize.width
         let groundTextureHeight = groundTextureSize.height
+        groundHeight = groundTextureHeight / 2
         
         let moveGroundSprite = SKAction.moveByX(-groundTextureWidth * 2.0, y: 0, duration: NSTimeInterval(0.02 * groundTextureWidth * 2.0))
         let resetGroundSprite = SKAction.moveByX(groundTextureWidth * 2.0, y: 0, duration: 0)
         let moveGroundSpritesForever = SKAction.repeatActionForever(SKAction.sequence([moveGroundSprite,resetGroundSprite]))
         groundTexture.filteringMode = .Nearest
         
-        for var i:CGFloat = 0; i < 2.0 + self.frame.size.width / (groundTextureWidth * 2.0); i++ {
+        for var i:CGFloat = 0; i < (8 + self.frame.size.width / (groundTextureWidth * 2.0)); i++ {
             let sprite = SKSpriteNode(texture: groundTexture)
-            sprite.setScale(2.0)
             sprite.position = CGPointMake(i * sprite.size.width, sprite.size.height / 2.0)
             sprite.runAction(moveGroundSpritesForever)
             self.scrollNode.addChild(sprite)
         }
         
-        self.groundNode.position = CGPointMake(0, groundTextureHeight)
-        self.groundNode.physicsBody = SKPhysicsBody(rectangleOfSize: CGSizeMake(self.frame.size.width, groundTextureHeight * 2.0))
-        self.groundNode.physicsBody!.dynamic = false
-        self.groundNode.physicsBody!.categoryBitMask = levelCat
+        self.groundNode.position = CGPointMake(0, 0)
+        self.groundNode.physicsBody = SKPhysicsBody(rectangleOfSize: CGSizeMake(self.frame.size.width, groundTextureHeight * 2))
+        self.groundNode.physicsBody?.dynamic = false
+        self.groundNode.physicsBody?.categoryBitMask = groundCategory
+        groundNode.name = "ground"
         
         self.addChild(groundNode)
         self.addChild(scrollNode)
+        
     }
     
-    func setupPlayer() -> SKSpriteNode {
+    func random() -> UInt32 {
         
-        let playerTexture = SKTexture(imageNamed: "isaac")
-        playerTexture.filteringMode = .Nearest
+        let range = UInt32(0.1)...UInt32(10)
+        return range.startIndex + arc4random_uniform(range.endIndex - range.startIndex + 1)
         
-        let player = SKSpriteNode(texture: playerTexture)
-        
-        player.setScale(0.75)
-        player.position = CGPoint(x: self.frame.size.width * 0.35, y: self.frame.size.height * 0.5)
-        
-        player.physicsBody = SKPhysicsBody(rectangleOfSize: player.size)
-        player.physicsBody!.dynamic = true
-        player.physicsBody!.allowsRotation = false
-        player.physicsBody?.categoryBitMask = playerCat
-        player.physicsBody?.collisionBitMask = levelCat | boxCat
-        player.physicsBody?.contactTestBitMask = boxCat
-        
-        self.addChild(player)
-        return player
     }
-
+    
+    func spawnBoxes() {
+        boxTexture = SKTexture(imageNamed: "box")
+        boxTexture.filteringMode = .Nearest
+        
+        let spawn = SKAction.performSelector(#selector(setupBoxes), onTarget: self)
+        let delay = SKAction.waitForDuration(0.5)
+        let spawnThenDelay = SKAction.sequence([spawn,delay])
+        let spawnThenDelayForever = SKAction.repeatActionForever(spawnThenDelay)
+        
+        let distanceToMove = self.frame.size.width + 2 * boxTexture.size().width
+        let moveBoxes = SKAction.moveByX(-distanceToMove, y: 0, duration: 0.01 * Double(distanceToMove))
+        let removeBoxes = SKAction.removeFromParent()
+        moveBoxesAndRemove = SKAction.sequence([moveBoxes,removeBoxes])
+        
+        self.runAction(spawnThenDelayForever)
+        self.addChild(boxNode)
+    }
+    
+    func setupBoxes() {
+        let boxNode = SKSpriteNode(texture: boxTexture)
+        boxNode.setScale(1.5)
+        if levelSpot < levelArray?.count{
+            let levelAdder = CGFloat(levelArray![levelSpot] as! Int * 50)
+            boxNode.position = CGPointMake( self.frame.size.width + self.boxTexture.size().width * 2.0, self.frame.size.height * 0.4 - groundHeight + playerBaseline/4 + levelAdder)
+        }
+        else {
+            boxNode.position = CGPointMake( self.frame.size.width + self.boxTexture.size().width * 2.0, self.frame.size.height * 0.4 - groundHeight + playerBaseline/4)
+        }
+        boxNode.physicsBody = SKPhysicsBody(rectangleOfSize: boxNode.size)
+        boxNode.physicsBody?.dynamic = false
+        boxNode.physicsBody?.categoryBitMask = boxCategory
+        
+        boxNode.runAction(moveBoxesAndRemove)
+        boxNode.name = "box"
+        levelSpot += 1
+        self.boxNode.addChild(boxNode)
+        
+    }
     
 }

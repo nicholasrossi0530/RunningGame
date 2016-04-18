@@ -21,7 +21,7 @@ class StartScene: SKScene {
         for touch: AnyObject in touches {
             let location = touch.locationInNode(self)
             if self.nodeAtPoint(location) == self.startButton {
-                let scene = GameScene2(size: self.size)
+                let scene = GameScene(size: self.size)
                 let skView = view! as SKView
                 skView.ignoresSiblingOrder = true
                 scene.scaleMode = .ResizeFill
