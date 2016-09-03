@@ -11,10 +11,14 @@ import SpriteKit
 class StartScene: SKScene {
     
     let startButton = SKSpriteNode(imageNamed: "start")
+    let titleLabel = SKSpriteNode(imageNamed: "title")
     
     override func didMoveToView(view: SKView) {
-        self.startButton.position = CGPointMake(CGRectGetMidX(self.frame), CGRectGetMidY(self.frame))
+        self.startButton.position = CGPointMake(CGRectGetMidX(self.frame), CGRectGetMidY(self.frame) - 100)
         self.addChild(self.startButton)
+        
+        self.titleLabel.position = CGPointMake(CGRectGetMidX(self.frame), CGRectGetMidY(self.frame) + 100)
+        self.addChild(self.titleLabel)
     }
     
     override func touchesBegan(touches: Set<UITouch>, withEvent event: UIEvent?) {
@@ -27,7 +31,6 @@ class StartScene: SKScene {
                 scene.scaleMode = .ResizeFill
                 scene.size = skView.bounds.size
                 skView.presentScene(scene)
-                
             }
         }
     }

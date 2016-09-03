@@ -8,14 +8,6 @@
 
 import SpriteKit
 
-//let stream: NSInputStream = {
-//    let bundle = NSBundle.mainBundle()
-//    let path = bundle.pathForResource("Levels", ofType: "plist")
-//    let a = NSInputStream(fileAtPath: path!)
-//    a!.open()
-//    return a!
-//}()
-
 class GameScene: SKScene, SKPhysicsContactDelegate  {
     
     var player: SKSpriteNode!
@@ -39,12 +31,19 @@ class GameScene: SKScene, SKPhysicsContactDelegate  {
     var moveBoxesAndRemove = SKAction()
     var boxTexture = SKTexture()
     var groundHeight = CGFloat()
-//    let levels = try! NSPropertyListSerialization.propertyListWithStream(stream, options: .Immutable, format: nil)
+    var boxArray: [SKNode] = []
     var levelArray: NSArray?
     var levelSpot = 0
+    var score = 0
+    var scores:[Int] = []
+    var scoreLabel: UILabel!
+    var scoreTimer: NSTimer!
+    var outOfScene = false
+    var scoreClass = Scores()
     
     override func didMoveToView(view: SKView) {
         
+        setupScoreItems()
         setupPhysics()
         setupGround()
         setupPlayer()
@@ -54,15 +53,37 @@ class GameScene: SKScene, SKPhysicsContactDelegate  {
         view.addGestureRecognizer(longPressRecognizer)
         let path = NSBundle.mainBundle().pathForResource("Levels", ofType: "plist")
         levelArray = NSArray(contentsOfFile: path!)
+        outOfScene = false
     }
     
     override func update(currentTime: NSTimeInterval) {
     }
     
+    func setupScoreItems() {
+        let scoreLabelRect = CGRect(x: (self.view?.frame.maxX)! - 100, y: 0, width: 100, height: 20)
+        scoreLabel = UILabel(frame: scoreLabelRect)
+        scoreLabel.text = "Score: \(score)"
+        scoreLabel.adjustsFontSizeToFitWidth = true
+        self.view?.addSubview(scoreLabel)
+        
+        scoreTimer = NSTimer.scheduledTimerWithTimeInterval(1, target: self, selector: #selector(GameScene.scoreCounter), userInfo: nil, repeats: true)
+        
+        let scoreSave = NSUserDefaults.standardUserDefaults()
+        let scoreArray = scoreSave.arrayForKey("scores")
+        //scores = scoreArray as! [Int]
+    }
+    
+    func scoreCounter() {
+        score += 1
+        scoreLabel.text = "Score: \(score)"
+        
+    }
+    
     func setupPhysics() {
         
         physicsWorld.contactDelegate = self
-        physicsWorld.gravity = CGVectorMake(0, -5)
+        physicsWorld.gravity = CGVectorMake(0, -6)
+        //physicsWorld.speed = 3
         
     }
     
@@ -70,7 +91,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate  {
         if onGround == true {
             playerPositionY = player.position.y
             player.physicsBody?.velocity = CGVectorMake(0, 0)
-            player.physicsBody?.applyImpulse(CGVectorMake(0, 40))
+            player.physicsBody?.applyImpulse(CGVectorMake(0, 35))
             onGround = false
         }
     }
@@ -114,12 +135,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate  {
         }
         if secondBody.categoryBitMask == boxCategory {
             if ((firstBody.node?.position.y)! - playerBaseline) <= secondBody.node?.position.y {
-                let scene = StartScene(size: self.size)
-                let skView = view! as SKView
-                skView.ignoresSiblingOrder = true
-                scene.scaleMode = .ResizeFill
-                scene.size = skView.bounds.size
-                skView.presentScene(scene)
+                goToScoreView()
             }
         }
     }
@@ -132,7 +148,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate  {
         player = SKSpriteNode(texture: playerTexture)
         player.setScale(0.75)
         playerBaseline = (groundNode.size.height / 2) + (player.size.height / 2)
-        //player.position = CGPointMake(self.frame.size.width * 0.35, self.frame.size.height * 0.5)
         player.position = CGPointMake(CGRectGetMinX(self.frame) + (player.size.width) + (player.size.width / 4), self.playerBaseline)
         player.physicsBody = SKPhysicsBody(rectangleOfSize: player.size)
         player.physicsBody!.dynamic = true
@@ -194,32 +209,74 @@ class GameScene: SKScene, SKPhysicsContactDelegate  {
         let spawnThenDelayForever = SKAction.repeatActionForever(spawnThenDelay)
         
         let distanceToMove = self.frame.size.width + 2 * boxTexture.size().width
+        //actualduration: 0.01 * Double(distanceToMove)
         let moveBoxes = SKAction.moveByX(-distanceToMove, y: 0, duration: 0.01 * Double(distanceToMove))
         let removeBoxes = SKAction.removeFromParent()
         moveBoxesAndRemove = SKAction.sequence([moveBoxes,removeBoxes])
+        
         
         self.runAction(spawnThenDelayForever)
         self.addChild(boxNode)
     }
     
     func setupBoxes() {
-        let boxNode = SKSpriteNode(texture: boxTexture)
-        boxNode.setScale(1.5)
+        for box in boxArray {
+            if box.position.x <= 0 {
+                boxArray.removeAtIndex(boxArray.indexOf(box)!)
+            }
+        }
         if levelSpot < levelArray?.count{
-            let levelAdder = CGFloat(levelArray![levelSpot] as! Int * 50)
-            boxNode.position = CGPointMake( self.frame.size.width + self.boxTexture.size().width * 2.0, self.frame.size.height * 0.4 - groundHeight + playerBaseline/4 + levelAdder)
+            var levelXAdder = CGFloat(0)
+            var levelYAdder = CGFloat(0)
+            if (levelArray![levelSpot] as! Int) > 9 {
+                let levelModifier = levelArray![levelSpot] as! Int
+                let x = levelModifier - (levelModifier % 10)
+                let y = levelModifier % 10
+                let width = Int(self.boxNode.frame.width)
+                levelXAdder = CGFloat(x * width)
+                levelYAdder = CGFloat(y * 50)
+            }
+            else {
+                levelYAdder = CGFloat(levelArray![levelSpot] as! Int * 50)
+            }
+            let boxNode = SKSpriteNode(texture: boxTexture)
+            boxNode.setScale(1.5)
+            
+            boxNode.position = CGPointMake( self.frame.size.width + self.boxTexture.size().width * 2.0 + levelXAdder, self.frame.size.height * 0.4 - groundHeight + playerBaseline/4 + levelYAdder)
+            boxNode.physicsBody = SKPhysicsBody(rectangleOfSize: boxNode.size)
+            boxNode.physicsBody?.dynamic = false
+            boxNode.physicsBody?.categoryBitMask = boxCategory
+            
+            boxNode.runAction(moveBoxesAndRemove)
+            boxNode.name = "box\(levelSpot)"
+            levelSpot += 1
+            boxArray.append(boxNode)
+            self.boxNode.addChild(boxNode)
         }
-        else {
-            boxNode.position = CGPointMake( self.frame.size.width + self.boxTexture.size().width * 2.0, self.frame.size.height * 0.4 - groundHeight + playerBaseline/4)
+        if boxArray.isEmpty && outOfScene == false {
+            goToScoreView()
         }
-        boxNode.physicsBody = SKPhysicsBody(rectangleOfSize: boxNode.size)
-        boxNode.physicsBody?.dynamic = false
-        boxNode.physicsBody?.categoryBitMask = boxCategory
-        
-        boxNode.runAction(moveBoxesAndRemove)
-        boxNode.name = "box"
-        levelSpot += 1
-        self.boxNode.addChild(boxNode)
+    }
+    
+    func restart() {
+        removeAllChildren()
+        removeAllActions()
+        scoreTimer.invalidate()
+        scoreLabel.removeFromSuperview()
+    }
+    
+    func goToScoreView() {
+        scoreClass.saveScores(score)
+        outOfScene = true
+        restart()
+        let scene = StartScene(size: self.size)
+        let skView = view! as SKView
+        skView.ignoresSiblingOrder = true
+        scene.scaleMode = .ResizeFill
+        scene.size = skView.bounds.size
+        skView.presentScene(scene)
+//        let gameView = self.view?.window?.rootViewController
+//        gameView?.performSegueWithIdentifier("EndGameSegue", sender: nil)
         
     }
     

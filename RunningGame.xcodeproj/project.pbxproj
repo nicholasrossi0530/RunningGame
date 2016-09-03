@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		1107E3111CC5478500E59746 /* EndGameViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1107E3101CC5478500E59746 /* EndGameViewController.swift */; };
+		1107E3151CD3013C00E59746 /* Scores.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1107E3141CD3013C00E59746 /* Scores.swift */; };
 		11AC981B1CBEAB8100FA692E /* Levels.plist in Resources */ = {isa = PBXBuildFile; fileRef = 11AC981A1CBEAB8100FA692E /* Levels.plist */; };
 		11BC43601CAA21A5005B9F97 /* StartScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11BC435F1CAA21A5005B9F97 /* StartScene.swift */; };
 		11D318981C9B4DF80057DC78 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11D318971C9B4DF80057DC78 /* AppDelegate.swift */; };
@@ -31,6 +32,7 @@
 
 /* Begin PBXFileReference section */
 		1107E3101CC5478500E59746 /* EndGameViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = EndGameViewController.swift; sourceTree = "<group>"; };
+		1107E3141CD3013C00E59746 /* Scores.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Scores.swift; sourceTree = "<group>"; };
 		11AC981A1CBEAB8100FA692E /* Levels.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Levels.plist; sourceTree = "<group>"; };
 		11BC435F1CAA21A5005B9F97 /* StartScene.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = StartScene.swift; sourceTree = "<group>"; };
 		11D318941C9B4DF70057DC78 /* RunningGame.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RunningGame.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -86,12 +88,13 @@
 			isa = PBXGroup;
 			children = (
 				11D318971C9B4DF80057DC78 /* AppDelegate.swift */,
+				11D3189D1C9B4DF80057DC78 /* GameViewController.swift */,
 				11EEFD131CA6453F00B871EA /* GameScene.swift */,
+				1107E3141CD3013C00E59746 /* Scores.swift */,
 				1107E3101CC5478500E59746 /* EndGameViewController.swift */,
+				11D3189F1C9B4DF80057DC78 /* Main.storyboard */,
 				11AC981A1CBEAB8100FA692E /* Levels.plist */,
 				11BC435F1CAA21A5005B9F97 /* StartScene.swift */,
-				11D3189D1C9B4DF80057DC78 /* GameViewController.swift */,
-				11D3189F1C9B4DF80057DC78 /* Main.storyboard */,
 				11D318A21C9B4DF80057DC78 /* Assets.xcassets */,
 				11D318A41C9B4DF80057DC78 /* LaunchScreen.storyboard */,
 				11D318A71C9B4DF80057DC78 /* Info.plist */,
@@ -216,6 +219,7 @@
 				11D3189E1C9B4DF80057DC78 /* GameViewController.swift in Sources */,
 				11EEFD141CA6453F00B871EA /* GameScene.swift in Sources */,
 				11D318981C9B4DF80057DC78 /* AppDelegate.swift in Sources */,
+				1107E3151CD3013C00E59746 /* Scores.swift in Sources */,
 				1107E3111CC5478500E59746 /* EndGameViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -343,10 +347,13 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				INFOPLIST_FILE = RunningGame/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = NickCo.RunningGame;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE = "";
 			};
 			name = Debug;
 		};
@@ -354,10 +361,13 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				INFOPLIST_FILE = RunningGame/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = NickCo.RunningGame;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE = "";
 			};
 			name = Release;
 		};
